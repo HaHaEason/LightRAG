@@ -8,7 +8,7 @@ PROMPTS["DEFAULT_RECORD_DELIMITER"] = "##"
 PROMPTS["DEFAULT_COMPLETION_DELIMITER"] = "<|COMPLETE|>"
 PROMPTS["process_tickers"] = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"]
 
-PROMPTS["DEFAULT_ENTITY_TYPES"] = ["organization", "person", "geo", "event", "category"]
+PROMPTS["DEFAULT_ENTITY_TYPES"] = ["organization", "person", "geo", "event", "category", "title", "chapter"]
 
 PROMPTS["entity_extraction"] = """-Goal-
 Given a text document that is potentially relevant to this activity and a list of entity types, identify all entities of those types from the text and all relationships among the identified entities.
@@ -16,12 +16,12 @@ Use {language} as output language.
 
 -Steps-
 1. Identify all entities. For each identified entity, extract the following information:
-- entity_name: Name of the entity, use same language as input text. If English, capitalized the name.
+- entity_name: Name of the entity, use same language as input text. If English, capitalized the name. Be careful not to miss the entity of the extracted title and chapter.
 - entity_type: One of the following types: [{entity_types}]
 - entity_description: Comprehensive description of the entity's attributes and activities
 Format each entity as ("entity"{tuple_delimiter}<entity_name>{tuple_delimiter}<entity_type>{tuple_delimiter}<entity_description>)
 
-2. From the entities identified in step 1, identify all pairs of (source_entity, target_entity) that are *clearly related* to each other.
+2. From the entities identified in step 1, identify all pairs of (source_entity, target_entity) that are *clearly related* to each other, including relationships between multi-level headings.
 For each pair of related entities, extract the following information:
 - source_entity: name of the source entity, as identified in step 1
 - target_entity: name of the target entity, as identified in step 1

@@ -33,23 +33,36 @@ from .prompt import GRAPH_FIELD_SEP, PROMPTS
 
 
 def chunking_by_token_size(
-    content: str, overlap_token_size=128, max_token_size=1024, tiktoken_model="gpt-4o"
+    content: str, global_config: dict, overlap_token_size=128, max_token_size=1024, tiktoken_model="gpt-4o"
 ):
-    tokens = encode_string_by_tiktoken(content, model_name=tiktoken_model)
     results = []
-    for index, start in enumerate(
-        range(0, len(tokens), max_token_size - overlap_token_size)
-    ):
-        chunk_content = decode_tokens_by_tiktoken(
-            tokens[start : start + max_token_size], model_name=tiktoken_model
-        )
-        results.append(
-            {
-                "tokens": min(max_token_size, len(tokens) - start),
-                "content": chunk_content.strip(),
-                "chunk_order_index": index,
-            }
-        )
+    MarkdownParser = global_config["markdown_chunk_parser"]
+    if MarkdownParser is not None:
+        parser = MarkdownParser(content.split("\n"))
+        chunks = parser.get_chunks(max_token_size=max_token_size)
+        for i, chunk in enumerate(chunks):
+            results.append(
+                {
+                    "tokens": len(chunk.strip()),
+                    "content": chunk.strip(),
+                    "chunk_order_index": i,
+                }
+            )
+    else:
+        tokens = encode_string_by_tiktoken(content, model_name=tiktoken_model)
+        for index, start in enumerate(
+            range(0, len(tokens), max_token_size - overlap_token_size)
+        ):
+            chunk_content = decode_tokens_by_tiktoken(
+                tokens[start : start + max_token_size], model_name=tiktoken_model
+            )
+            results.append(
+                {
+                    "tokens": min(max_token_size, len(tokens) - start),
+                    "content": chunk_content.strip(),
+                    "chunk_order_index": index,
+                }
+            )
     return results
 
 
