@@ -15,7 +15,7 @@ import xml.etree.ElementTree as ET
 import numpy as np
 import tiktoken
 
-from lightrag.prompt import PROMPTS
+from lightrag.prompt_manager import PromptManager
 
 
 class UnlimitedSemaphore:
@@ -339,6 +339,8 @@ async def get_best_cached_response(
     llm_func=None,
     original_prompt=None,
 ) -> Union[str, None]:
+    PROMPTS = PromptManager().get_prompts()
+
     # Get mode-specific cache
     mode_cache = await hashing_kv.get_by_id(mode)
     if not mode_cache:

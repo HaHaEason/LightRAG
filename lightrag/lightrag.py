@@ -137,6 +137,8 @@ class LightRAG:
     chunk_overlap_token_size: int = 100
     tiktoken_model_name: str = "gpt-4o-mini"
 
+    markdown_chunk_parser: any = None
+
     # entity extraction
     entity_extract_max_gleaning: int = 1
     entity_summary_to_max_tokens: int = 500
@@ -367,6 +369,7 @@ class LightRAG:
                         }
                         for dp in chunking_by_token_size(
                             doc["content"],
+                            global_config=asdict(self),
                             overlap_token_size=self.chunk_overlap_token_size,
                             max_token_size=self.chunk_token_size,
                             tiktoken_model=self.tiktoken_model_name,

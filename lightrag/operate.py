@@ -29,28 +29,42 @@ from .base import (
     TextChunkSchema,
     QueryParam,
 )
-from .prompt import GRAPH_FIELD_SEP, PROMPTS
+from .prompt_manager import PromptManager
 import time
 
 
 def chunking_by_token_size(
-    content: str, overlap_token_size=128, max_token_size=1024, tiktoken_model="gpt-4o"
+    content: str, global_config: dict, overlap_token_size=128, max_token_size=1024, tiktoken_model="gpt-4o"
 ):
-    tokens = encode_string_by_tiktoken(content, model_name=tiktoken_model)
     results = []
-    for index, start in enumerate(
-        range(0, len(tokens), max_token_size - overlap_token_size)
-    ):
-        chunk_content = decode_tokens_by_tiktoken(
-            tokens[start : start + max_token_size], model_name=tiktoken_model
-        )
-        results.append(
-            {
-                "tokens": min(max_token_size, len(tokens) - start),
-                "content": chunk_content.strip(),
-                "chunk_order_index": index,
-            }
-        )
+
+    MarkdownParser = global_config["markdown_chunk_parser"]
+    if MarkdownParser is not None:
+        parser = MarkdownParser(content.split("\n"))
+        chunks = parser.get_chunks(max_token_size=max_token_size)
+        for i, chunk in enumerate(chunks):
+            results.append(
+                {
+                    "tokens": len(chunk.strip()),
+                    "content": chunk.strip(),
+                    "chunk_order_index": i,
+                }
+            )
+    else:
+        tokens = encode_string_by_tiktoken(content, model_name=tiktoken_model)
+        for index, start in enumerate(
+            range(0, len(tokens), max_token_size - overlap_token_size)
+        ):
+            chunk_content = decode_tokens_by_tiktoken(
+                tokens[start : start + max_token_size], model_name=tiktoken_model
+            )
+            results.append(
+                {
+                    "tokens": min(max_token_size, len(tokens) - start),
+                    "content": chunk_content.strip(),
+                    "chunk_order_index": index,
+                }
+            )
     return results
 
 
@@ -59,6 +73,9 @@ async def _handle_entity_relation_summary(
     description: str,
     global_config: dict,
 ) -> str:
+    PROMPTS = PromptManager().get_prompts()
+    GRAPH_FIELD_SEP = PromptManager().get_graph_field_sep()
+
     use_llm_func: callable = global_config["llm_model_func"]
     llm_max_tokens = global_config["llm_model_max_token_size"]
     tiktoken_model_name = global_config["tiktoken_model_name"]
@@ -139,6 +156,9 @@ async def _merge_nodes_then_upsert(
     knowledge_graph_inst: BaseGraphStorage,
     global_config: dict,
 ):
+    PROMPTS = PromptManager().get_prompts()
+    GRAPH_FIELD_SEP = PromptManager().get_graph_field_sep()
+
     already_entity_types = []
     already_source_ids = []
     already_description = []
@@ -187,6 +207,9 @@ async def _merge_edges_then_upsert(
     knowledge_graph_inst: BaseGraphStorage,
     global_config: dict,
 ):
+    PROMPTS = PromptManager().get_prompts()
+    GRAPH_FIELD_SEP = PromptManager().get_graph_field_sep()
+
     already_weights = []
     already_source_ids = []
     already_description = []
@@ -254,6 +277,9 @@ async def extract_entities(
     relationships_vdb: BaseVectorStorage,
     global_config: dict,
 ) -> Union[BaseGraphStorage, None]:
+    PROMPTS = PromptManager().get_prompts()
+    GRAPH_FIELD_SEP = PromptManager().get_graph_field_sep()
+
     use_llm_func: callable = global_config["llm_model_func"]
     entity_extract_max_gleaning = global_config["entity_extract_max_gleaning"]
 
@@ -468,6 +494,9 @@ async def kg_query(
     global_config: dict,
     hashing_kv: BaseKVStorage = None,
 ) -> str:
+    PROMPTS = PromptManager().get_prompts()
+    GRAPH_FIELD_SEP = PromptManager().get_graph_field_sep()
+
     # Handle cache
     use_model_func = global_config["llm_model_func"]
     args_hash = compute_args_hash(query_param.mode, query)
@@ -781,6 +810,9 @@ async def _find_most_related_text_unit_from_entities(
     text_chunks_db: BaseKVStorage[TextChunkSchema],
     knowledge_graph_inst: BaseGraphStorage,
 ):
+    PROMPTS = PromptManager().get_prompts()
+    GRAPH_FIELD_SEP = PromptManager().get_graph_field_sep()
+
     text_units = [
         split_string_by_multi_markers(dp["source_id"], [GRAPH_FIELD_SEP])
         for dp in node_datas
@@ -1034,6 +1066,9 @@ async def _find_related_text_unit_from_relationships(
     text_chunks_db: BaseKVStorage[TextChunkSchema],
     knowledge_graph_inst: BaseGraphStorage,
 ):
+    PROMPTS = PromptManager().get_prompts()
+    GRAPH_FIELD_SEP = PromptManager().get_graph_field_sep()
+
     text_units = [
         split_string_by_multi_markers(dp["source_id"], [GRAPH_FIELD_SEP])
         for dp in edge_datas
@@ -1105,6 +1140,9 @@ async def naive_query(
     global_config: dict,
     hashing_kv: BaseKVStorage = None,
 ):
+    PROMPTS = PromptManager().get_prompts()
+    GRAPH_FIELD_SEP = PromptManager().get_graph_field_sep()
+
     # Handle cache
     use_model_func = global_config["llm_model_func"]
     args_hash = compute_args_hash(query_param.mode, query)
@@ -1199,6 +1237,9 @@ async def mix_kg_vector_query(
     global_config: dict,
     hashing_kv: BaseKVStorage = None,
 ) -> str:
+    PROMPTS = PromptManager().get_prompts()
+    GRAPH_FIELD_SEP = PromptManager().get_graph_field_sep()
+
     """
     Hybrid retrieval implementation combining knowledge graph and vector search.
 
