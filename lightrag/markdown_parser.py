@@ -1,5 +1,4 @@
 import re
-
 class Node:
     def __init__(self, level, title, content='', parent=None):
         self.level = level
@@ -94,16 +93,10 @@ class MarkdownParser:
             if node.contentSize <= max_token_size:
                 chunks.append(node.getAllContent())
             else:
+                if 0 == len(node.children):
+                    chunks.append(node.getAllContent())
                 if index < len(node.children):
                     stack.append((node, index + 1))  # 继续处理下一个兄弟节点
                     stack.append((node.children[index], 0))  # 处理当前节点的子节点
 
         return chunks
-
-if __name__ == "__main__":
-    with open("***.md", encoding="utf-8-sig") as f:
-        LINES = f.readlines()
-    parser = MarkdownParser(LINES)
-    chunks = parser.get_chunks(max_token_size=1000)
-    for i, chunk in enumerate(chunks):
-        print(f"Chunk {i + 1}:\n{chunk}\n")
